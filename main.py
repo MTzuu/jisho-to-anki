@@ -30,6 +30,15 @@ def JishoLookup(Kanji):
 
     return JishoResponse
 
+def PreciseJishoLookup(Kanji):
+    JishoResponse = []
+    for n in range(2):
+        url = 'https://jisho.org/api/v1/search/words?keyword=*' + Kanji + '*%20%23jlpt-n' + str(2-n)
+        response = requests.get(url, headers = headers)
+        JishoResponse += json.loads(response.text)['data']
+
+    return JishoResponse
+
 def CreateCard(JishoEntry):
     Tags = []
     Kanjis = []
@@ -57,22 +66,21 @@ def CreateCards(AllKanjis, LearnedKanjis, n = 1, offset = 0):
         i += offset
         JishoResponse = JishoLookup(NewKanjis[i])
         LearnedKanjis.append(NewKanjis[i])
+        if not JishoResponse:
+            JishoResponse = PreciseJishoLookup(NewKanjis[i])
+
         for word in JishoResponse:
             Card, Kanjis = CreateCard(word)
             if all(elem in LearnedKanjis for elem in Kanjis):
                 Cards += Card + '\n'
-                print(Card)
 
+    return Cards
 
 def main():
     col = collection.Collection('data/collection.anki2')
     KanjiDeckID = col.decks.all_names_and_ids()[-2].id
     KanjiDeckID = '(' + str(KanjiDeckID) + ')'
     KanjiExamplesDeckID = col.decks.all_names_and_ids()[-3].id
-#     r = re.compile('^漢字')
-#     newlist = [re.sub('漢字::', '', string) for string in list(filter(r.match, col.tags.all()))]
-#     print(newlist)
-#     print(len(newlist))
     AllKanjiIDs = col.db.all(
             f"""\
                     SELECT  nid
@@ -103,6 +111,10 @@ def main():
                     """)
     LearnedKanjis = [re.sub('\x1f', ' ', LearnedKanji[0]).split()[1] for LearnedKanji in LearnedKanjis]
     LearnedIndex = AllKanjis.index(LearnedKanjis[-1])
-    CreateCards(AllKanjis, LearnedKanjis, n = 6, offset = 12)
+    Cards = CreateCards(AllKanjis, LearnedKanjis, n = 6, offset = 12)
+    file = open('newcards', 'w')
+    file.write(Cards)
+    file.close()
 
-main()
+if __name__ == '__main__':
+    main()
