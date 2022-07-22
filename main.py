@@ -18,22 +18,14 @@ TagDict = {
         'Expressions' : 'expression',
         "Noun which may take the genitive case particle 'no'" : 'noun::no',
         'Noun, used as a suffix' : 'noun:suffix',
-        'Prefix' : 'prefix'
+        'Prefix' : 'prefix',
+        'Suffix' : 'suffix'
         }
 
 def JishoLookup(Kanji):
     JishoResponse = []
-    for n in range(3):
+    for n in range(5):
         url = 'https://jisho.org/api/v1/search/words?keyword=*' + Kanji + '*%20%23jlpt-n' + str(5-n)
-        response = requests.get(url, headers = headers)
-        JishoResponse += json.loads(response.text)['data']
-
-    return JishoResponse
-
-def PreciseJishoLookup(Kanji):
-    JishoResponse = []
-    for n in range(2):
-        url = 'https://jisho.org/api/v1/search/words?keyword=*' + Kanji + '*%20%23jlpt-n' + str(2-n)
         response = requests.get(url, headers = headers)
         JishoResponse += json.loads(response.text)['data']
 
@@ -43,7 +35,7 @@ def CreateCard(JishoEntry):
     Tags = []
     Kanjis = []
 
-    jlpt = [str(lvl[-1]) for lvl in JishoEntry['jlpt']]
+    jlpt = [lvl[-1] for lvl in JishoEntry['jlpt']]
     Tags.append('jlpt::n' + str(max(jlpt)))
     for partofspeech in JishoEntry['senses'][0]['parts_of_speech']:
         for tag in list(TagDict.keys()):
@@ -55,26 +47,37 @@ def CreateCard(JishoEntry):
             Tags.append('漢字::' + Char)
             Kanjis.append(Char)
 
+    if 'suffix' in Tags:
+        JishoEntry['japanese'][0]['word'] = '~ ' + JishoEntry['japanese'][0]['word']
+
+    if 'prefix' in Tags:
+        JishoEntry['japanese'][0]['word'] += ' ~'
+
+    for tag in JishoEntry['senses'][0]['tags']:
+        if re.match(tag, 'Usually written using kana alone'):
+            Card = '(Usuall written using kana alone) ' + '\t'.join([JishoEntry['japanese'][0]['word'], JishoEntry['japanese'][0]['reading'], ', '.join(JishoEntry['senses'][0]['english_definitions'])] + [' '.join(Tags)])
+            return Card, Kanjis
+
     Card = '\t'.join([JishoEntry['japanese'][0]['word'], JishoEntry['japanese'][0]['word'] + '['+ JishoEntry['japanese'][0]['reading'] + ']', ', '.join(JishoEntry['senses'][0]['english_definitions'])] + [' '.join(Tags)])
+    
     return Card, Kanjis
 
 def CreateCards(AllKanjis, LearnedKanjis, n = 1, offset = 0):
     Cards = ''
     LearnedIndex = AllKanjis.index(LearnedKanjis[-1])
-    NewKanjis = AllKanjis[LearnedIndex+1:]
+    OffsetKanjis, NewKanjis = AllKanjis[LearnedIndex+1:LearnedIndex+1+offset], AllKanjis[LearnedIndex+1+offset:]
+    LearnedKanjis += OffsetKanjis
+
     for i in range(n):
-        i += offset
         JishoResponse = JishoLookup(NewKanjis[i])
         LearnedKanjis.append(NewKanjis[i])
-        if not JishoResponse:
-            JishoResponse = PreciseJishoLookup(NewKanjis[i])
 
         for word in JishoResponse:
             Card, Kanjis = CreateCard(word)
             if all(elem in LearnedKanjis for elem in Kanjis):
-                Cards += Card + '\n'
+                Cards = '\n'.join([Cards, Card])
 
-    return Cards
+    return Cards[1:]
 
 def main():
     col = collection.Collection('data/collection.anki2')
@@ -112,7 +115,7 @@ def main():
     LearnedKanjis = [re.sub('\x1f', ' ', LearnedKanji[0]).split()[1] for LearnedKanji in LearnedKanjis]
     LearnedIndex = AllKanjis.index(LearnedKanjis[-1])
     Cards = CreateCards(AllKanjis, LearnedKanjis, n = 6, offset = 12)
-    file = open('newcards', 'w')
+    file = open('newcards', 'w', encoding='utf-8')
     file.write(Cards)
     file.close()
 
