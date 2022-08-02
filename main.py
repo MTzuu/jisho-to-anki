@@ -125,7 +125,7 @@ def CreateCard(JishoEntry):
 
     for tag in JishoEntry['senses'][0]['tags']:
         if re.search(tag, 'Usually written using kana alone'):
-            Card = '(usually written using kana alone) ' + '\t'.join([
+            Card = '(usually written using kana alone)<br>' + '\t'.join([
                 suffix + JishoEntry['japanese'][0]['word'] + prefix,
                 suffix + JishoEntry['japanese'][0]['reading'] + prefix,
                 ', '.join(JishoEntry['senses'][0]['english_definitions'])
@@ -208,7 +208,7 @@ def main():
                     """)
     LearnedKanjis = [re.sub('\x1f', ' ', LearnedKanji[0]).split()[1] for LearnedKanji in LearnedKanjis]
     LearnedIndex = AllKanjis.index(LearnedKanjis[-1])
-    Cards = CreateCards(AllKanjis, [], n = 1, offset = 289)
+    Cards = CreateCards(AllKanjis, LearnedKanjis, n = 9, offset = 30)
     file = open('newcards', 'w', encoding='utf-8')
     file.write(Cards)
     file.close()
