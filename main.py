@@ -47,54 +47,7 @@ def CreateFurigana(JishoEntry):
     word = JishoEntry['japanese'][0]['word']
     reading = JishoEntry['japanese'][0]['reading']
 
-    Kanjis = ''.join([n for n in word if n not in kanas])
-    idx = [word.index(Kanji) for Kanji in Kanjis]
-
-    if Kanjis == word:
-        # This splits the full reading returned by jisho into
-        # chunks of equal lenght and adds such a chunk to each
-        # kanji.
-        # Sometimes this works but most of the time it doesn't.
-        # Be prepared to double check the output
-        parts = len(word)
-        readinglen = len(reading)
-        partlen = -(-readinglen//parts)
-        furigana = [reading[n*partlen:min([readinglen, n*partlen + partlen])] for n in range(parts)]
-        furigana = ''.join([''.join([x, '[',  y, ']']) for x, y in zip(list(word), furigana)])
-
-    elif len(idx) == max(idx)+1:
-        # This does the same as above,
-        # except it cuts of the kana tail
-        idx = max(idx) - len(word) + 1
-        parts = len(word[:idx])
-        readinglen = len(reading[:idx])
-        partlen = -(-readinglen//parts)
-        furiganas = [reading[n*partlen:min([readinglen, n*partlen + partlen])] for n in range(parts)]
-        furigana = ''.join([''.join([x, '[', y, ']']) for x, y in zip(list(word[:idx]), furiganas)] + [word[idx:]])
-
-    else:
-        # This is a truly borked way of adding furigana to words.
-        # Expect this to give very weird results.
-        try:
-            tmpfurigana = []
-            tmpreading = ''.join([n for n in reading if n not in list(word)])
-            parts = len(Kanjis)
-            readinglen = len(tmpreading)
-            partlen = -(-readinglen//parts)
-            furiganas = [tmpreading[n*partlen:min([readinglen, n*partlen + partlen])] for n in range(parts)]
-            furigana = {Kanji : '[' + furigana + ']' for Kanji, furigana in zip(Kanjis, furiganas)}
-            for n in word:
-                if n not in kanas:
-                    tmpfurigana.append(''.join([' ', n, furigana[n]]))
-                else:
-                    tmpfurigana.append(n)
-            if tmpfurigana[0][0] == ' ':
-                tmpfurigana[0] = tmpfurigana[0][1:]
-
-            furigana = ''.join(tmpfurigana)
-        except:
-            furigana = word + '[' + reading + ']'
-
+    furigana = word + '[' + reading + ']'
     return furigana
 
 def CreateCard(JishoEntry):
@@ -175,7 +128,7 @@ def CreateCards(AllKanjis, LearnedKanjis, n = 1, offset = 0):
 
 def main():
     col = collection.Collection('data/collection.anki2')
-    KanjiDeckID = col.decks.all_names_and_ids()[-2].id
+    KanjiDeckID = col.decks.all_names_and_ids()[-3].id
     KanjiDeckID = '(' + str(KanjiDeckID) + ')'
     KanjiExamplesDeckID = col.decks.all_names_and_ids()[-3].id
     AllKanjiIDs = col.db.all(
@@ -208,8 +161,8 @@ def main():
                     """)
     LearnedKanjis = [re.sub('\x1f', ' ', LearnedKanji[0]).split()[1] for LearnedKanji in LearnedKanjis]
     LearnedIndex = AllKanjis.index(LearnedKanjis[-1])
-    Cards = CreateCards(AllKanjis, LearnedKanjis, n = 9, offset = 30)
-    file = open('newcards', 'w', encoding='utf-8')
+    Cards = CreateCards(AllKanjis, LearnedKanjis, n = 2, offset = 24)
+    file = open('newcards.txt', 'w', encoding='utf-8')
     file.write(Cards)
     file.close()
 
