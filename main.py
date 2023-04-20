@@ -104,10 +104,10 @@ def CreateCards(AllKanjis, LearnedKanjis, n = 1, offset = 0):
     # new word appear in LearnedKanjis.
     Cards = ''
     try:
-        LearnedIndex = AllKanjis.index(LearnedKanjis[-1])
+        LearnedIndex = AllKanjis.index(LearnedKanjis[-4])
     except:
         LearnedIndex = -1
-
+    
     OffsetKanjis, NewKanjis = AllKanjis[LearnedIndex+1:LearnedIndex+1+offset], AllKanjis[LearnedIndex+1+offset:]
     LearnedKanjis += OffsetKanjis
 
@@ -161,7 +161,7 @@ def main():
                     """)
     LearnedKanjis = [re.sub('\x1f', ' ', LearnedKanji[0]).split()[1] for LearnedKanji in LearnedKanjis]
     LearnedIndex = AllKanjis.index(LearnedKanjis[-1])
-    Cards = CreateCards(AllKanjis, LearnedKanjis, n = 2, offset = 24)
+    Cards = CreateCards(AllKanjis, LearnedKanjis, n = 2, offset = 12)
     file = open('newcards.txt', 'w', encoding='utf-8')
     file.write(Cards)
     file.close()
